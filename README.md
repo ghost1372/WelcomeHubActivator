@@ -44,6 +44,9 @@ The output is `WelcomeHubActivator.elf`.
 > [!TIP] 
 > Creates a backup of `/system_data/priv/mms/app.db` at `/system_data/priv/mms/app.bckdb` before making any modifications, allowing the original database to be restored if anything goes wrong.
 
+> [!TIP]
+> You only need to inject the payload once. After activation, the changes persist even if you restart or shut down your PS5. You don’t need to run the payload again.
+
 <img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/129af97d-9bba-460b-9b35-c505863018a3" />
 
 <img width="739" height="415" alt="image" src="https://github.com/user-attachments/assets/834854b5-0972-485d-86c6-d78c25990207" />
