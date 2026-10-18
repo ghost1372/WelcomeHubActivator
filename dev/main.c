@@ -47,7 +47,8 @@ int sceKernelSendNotificationRequest(int, notify_request_t*, size_t, int);
 static int
 send_notification(const char *message, uint32_t firmware_version) {
 	notify_request_t req = {0};
-	unsigned int major = (firmware_version >> 24) & 0xff;
+	unsigned int major = (((firmware_version >> 28) & 0x0f) * 10) +
+						((firmware_version >> 24) & 0x0f);
 	unsigned int minor = (((firmware_version >> 20) & 0x0f) * 10) +
 						((firmware_version >> 16) & 0x0f);
 
