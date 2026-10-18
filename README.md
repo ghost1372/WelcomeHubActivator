@@ -29,7 +29,7 @@ A PS5 ELF payload that enables the Welcome Hub.
 ## How to compile
 
 > [!Note]
-> You can use Windows and WSL2 to compile this project.
+> You need Linux, but You can use Windows and WSL2 to compile this project.
 
 1. Install or prepare the [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk).
 
