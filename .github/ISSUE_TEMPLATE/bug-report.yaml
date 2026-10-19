@@ -1,4 +1,4 @@
-
+﻿name: Bug report
 description: File a bug report.
 title: "[Bug]: "
 labels: []
@@ -8,17 +8,13 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
-
   - type: textarea
-    id: bug-description
     validations:
       required: true
     attributes:
       label: Describe the bug
       description: Please enter a short, clear description of the bug.
-
   - type: textarea
-    id: steps-to-reproduce
     validations:
       required: true
     attributes:
@@ -26,31 +22,25 @@ body:
       description: Please provide any required setup and steps to reproduce the behavior.
       placeholder: |
         1. Go to '...'
-        2. Click on '...'
-
+        2. Click on '....'
   - type: textarea
-    id: expected-behavior
     attributes:
       label: Expected behavior
-      description: Please provide a description of what you expected to happen.
-
+      description: Please provide a description of what you expected to happen
   - type: textarea
-    id: screenshots
     attributes:
       label: Screenshots
-      description: If applicable, add screenshots here to help explain your problem.
-
+      description: If applicable, add screenshots here to help explain your problem
   - type: dropdown
-    id: payload-version
-    attributes:
-      label: Payload Version
-      options:
-        - "WelcomeHubActivator 1.0.0"
     validations:
       required: true
-
+    attributes:
+      label: Payload version
+      options:
+        "WelcomeHubActivator 1.0.0"
   - type: dropdown
-    id: console-firmware
+    validations:
+      required: true
     attributes:
       label: Console Firmware
       description: Which PS5 system software version is installed on your console?
@@ -75,11 +65,7 @@ body:
         - "10.20"
         - "10.01"
         - "10.00"
-    validations:
-      required: true
-
   - type: textarea
-    id: additional-context
     attributes:
       label: Additional context
-      description: Enter any other applicable information here.
+      description: Enter any other applicable info here
