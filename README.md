@@ -47,6 +47,9 @@ The output is `WelcomeHubActivator.elf`.
 > [!TIP]
 > You only need to inject the payload once. After activation, the changes persist even if you restart or shut down your PS5. You don’t need to run the payload again.
 
+> [!Warning]
+> The images are just photos from Google. Online features won't be available until you sign in to PSN. Only the Storage, Controller, Trophy, and Animated Background widgets work offline.
+
 <img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/129af97d-9bba-460b-9b35-c505863018a3" />
 
 <img width="739" height="415" alt="image" src="https://github.com/user-attachments/assets/834854b5-0972-485d-86c6-d78c25990207" />
