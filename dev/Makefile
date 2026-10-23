@@ -7,17 +7,20 @@ else
     $(error PS5_PAYLOAD_SDK is undefined)
 endif
 
-ELF := WelcomeHubActivator.elf
-SOURCES := main.c sqlite/sqlite3.c
-HEADERS := sqlite/sqlite3.h
+PAYLOAD_VERSION ?= v1.1.0
+ELF := WelcomeHubActivator-$(PAYLOAD_VERSION).elf
+SOURCES := main.c db.c server.c ui.c sqlite/sqlite3.c
+HEADERS := config.h db.h server.h ui.h sqlite/sqlite3.h
+CPPFLAGS := -DWELCOMEHUB_PAYLOAD_VERSION=\"$(PAYLOAD_VERSION)\"
 CFLAGS := -Wall -Werror -Os
+LDLIBS := -lSceUserService -lSceSystemService
 
-.PHONY: all clean
+.PHONY: all clean test debug
 
 all: $(ELF)
 
 $(ELF): $(SOURCES) $(HEADERS)
-	$(CC) $(CFLAGS) -o $@ $(SOURCES)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(SOURCES) $(LDLIBS)
 
 clean:
 	rm -f $(ELF)
