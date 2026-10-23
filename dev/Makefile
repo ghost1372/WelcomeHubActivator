@@ -7,7 +7,7 @@ else
     $(error PS5_PAYLOAD_SDK is undefined)
 endif
 
-PAYLOAD_VERSION ?= v1.1.0
+PAYLOAD_VERSION ?= v1.2.0
 ELF := WelcomeHubActivator-$(PAYLOAD_VERSION).elf
 SOURCES := main.c db.c server.c sqlite/sqlite3.c
 HEADERS := config.h db.h server.h sqlite/sqlite3.h
