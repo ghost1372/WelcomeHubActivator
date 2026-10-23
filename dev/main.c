@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #include <ps5/kernel.h>
@@ -137,6 +138,9 @@ copy_file(const char *source_path, const char *destination_path) {
 
 int
 main(void) {
+	/* Name shown in the running-process list (see config.h). */
+	syscall(SYS_thr_set_name, -1, PAYLOAD_PROCESS_NAME);
+
 	static const char database_path[] = WELCOMEHUB_DB_PATH;
 	static const char backup_path[] = WELCOMEHUB_DB_BACKUP;
 	uint32_t firmware_version = kernel_get_fw_version();

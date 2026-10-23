@@ -9,8 +9,9 @@ endif
 
 PAYLOAD_VERSION ?= v1.1.0
 ELF := WelcomeHubActivator-$(PAYLOAD_VERSION).elf
-SOURCES := main.c db.c server.c ui.c sqlite/sqlite3.c
-HEADERS := config.h db.h server.h ui.h sqlite/sqlite3.h
+SOURCES := main.c db.c server.c sqlite/sqlite3.c
+HEADERS := config.h db.h server.h sqlite/sqlite3.h
+ASSETS  := web/index.html
 CPPFLAGS := -DWELCOMEHUB_PAYLOAD_VERSION=\"$(PAYLOAD_VERSION)\"
 CFLAGS := -Wall -Werror -Os
 LDLIBS := -lSceUserService -lSceSystemService
@@ -19,7 +20,7 @@ LDLIBS := -lSceUserService -lSceSystemService
 
 all: $(ELF)
 
-$(ELF): $(SOURCES) $(HEADERS)
+$(ELF): $(SOURCES) $(HEADERS) $(ASSETS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(SOURCES) $(LDLIBS)
 
 clean:

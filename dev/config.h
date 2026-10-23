@@ -11,13 +11,13 @@
 #define WELCOMEHUB_PAYLOAD_VERSION "dev"
 #endif
 
-/* Branding shown in the web UI */
-#define WELCOMEHUB_APP_NAME     "WelcomeHubActivator"
-#define WELCOMEHUB_UI_TITLE     "Activator"
-#define WELCOMEHUB_UI_EYEBROW   "Welcome Hub"
-#define WELCOMEHUB_AUTHOR       "Mahdi Hosseini"
-#define WELCOMEHUB_REPO_PATH    "github.com/ghost1372/WelcomeHubActivator"
-#define WELCOMEHUB_REPO_URL     "https://" WELCOMEHUB_REPO_PATH
+/* Branding (app name, title, author, repo link) lives directly in
+ * web/index.html, which is embedded into the payload at build time. */
+
+/* Name shown in the PS5 running-process list (thread name, max 19 chars). */
+#ifndef PAYLOAD_PROCESS_NAME
+#define PAYLOAD_PROCESS_NAME    "WelcomeHub.elf"
+#endif
 
 /* Web server */
 #define WELCOMEHUB_WEB_PORT     7777

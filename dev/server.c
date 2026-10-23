@@ -1,6 +1,6 @@
 /*
  * server.c - minimal single-threaded HTTP server for the Welcome Hub UI.
- * Routes: GET /api/state, POST /api/toggle, GET / (dashboard page).
+ * Routes: GET /api/state, GET /api/info, POST /api/toggle, GET / (web/index.html).
  */
 #include <errno.h>
 #include <signal.h>
@@ -10,13 +10,128 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/types.h>
 
+#include "config.h"
 #include "db.h"
 #include "server.h"
-#include "ui.h"
+
+/*
+ * Embed web/index.html into the payload at build time (no external tools
+ * needed). Defines: const uint8_t web_index_html[]; const size_t web_index_html_size;
+ * The path is relative to the directory `make` runs in.
+ */
+#define INCASSET(name, file)                    \
+    __asm__(".section .rodata\n"                \
+            ".global " #name "\n"               \
+            ".global " #name "_end\n"           \
+            ".global " #name "_size\n"          \
+            ".align 16\n"                       \
+            #name ":\n"                         \
+            ".incbin \"" file "\"\n"            \
+            #name "_end:\n"                     \
+            #name "_size:\n"                    \
+            ".quad " #name "_end - " #name "\n" \
+            ".previous\n");                     \
+    extern const uint8_t name[];                \
+    extern const size_t name##_size;
+
+INCASSET(web_index_html, "web/index.html");
+
+static void get_active_local_ip(char *buffer, size_t buffer_size) {
+    struct ifaddrs *if_list = NULL;
+    struct ifaddrs *entry = NULL;
+    struct in_addr loopback_addr = {0};
+
+    if(buffer_size == 0) {
+        return;
+    }
+    buffer[0] = '\0';
+
+    if(getifaddrs(&if_list) != 0) {
+        snprintf(buffer, buffer_size, "127.0.0.1");
+        return;
+    }
+
+    loopback_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    for(entry = if_list; entry != NULL; entry = entry->ifa_next) {
+        struct sockaddr_in *addr = NULL;
+        char candidate[64];
+
+        if(entry->ifa_addr == NULL || entry->ifa_addr->sa_family != AF_INET) {
+            continue;
+        }
+
+        addr = (struct sockaddr_in *)entry->ifa_addr;
+        if(addr->sin_addr.s_addr == loopback_addr.s_addr) {
+            continue;
+        }
+        if(addr->sin_addr.s_addr == 0u) {
+            continue;
+        }
+
+        if(inet_ntop(AF_INET, &addr->sin_addr, candidate, sizeof(candidate)) != NULL) {
+            snprintf(buffer, buffer_size, "%s", candidate);
+            freeifaddrs(if_list);
+            return;
+        }
+    }
+
+    for(entry = if_list; entry != NULL; entry = entry->ifa_next) {
+        struct sockaddr_in *addr = NULL;
+        char candidate[64];
+
+        if(entry->ifa_addr == NULL || entry->ifa_addr->sa_family != AF_INET) {
+            continue;
+        }
+
+        addr = (struct sockaddr_in *)entry->ifa_addr;
+        if(inet_ntop(AF_INET, &addr->sin_addr, candidate, sizeof(candidate)) != NULL) {
+            snprintf(buffer, buffer_size, "%s", candidate);
+            freeifaddrs(if_list);
+            return;
+        }
+    }
+
+    freeifaddrs(if_list);
+    snprintf(buffer, buffer_size, "127.0.0.1");
+}
+
+static void format_firmware_version_string(char *buffer, size_t buffer_size,
+                                          uint32_t firmware_version) {
+    unsigned int major_tens;
+    unsigned int major_ones;
+    unsigned int minor_tens;
+    unsigned int minor_ones;
+    unsigned int major;
+    unsigned int minor;
+
+    if(buffer_size == 0) {
+        return;
+    }
+    buffer[0] = '\0';
+
+    if(firmware_version == 0u) {
+        snprintf(buffer, buffer_size, "00.00");
+        return;
+    }
+
+    major_tens = (firmware_version >> 28) & 0xFu;
+    major_ones = (firmware_version >> 24) & 0xFu;
+    minor_tens = (firmware_version >> 20) & 0xFu;
+    minor_ones = (firmware_version >> 16) & 0xFu;
+
+    major = (major_tens * 10u) + major_ones;
+    minor = (minor_tens * 10u) + minor_ones;
+
+    snprintf(buffer, buffer_size, "%02u.%02u", major, minor);
+}
 
 static void json_escape_string(char *out, size_t out_size, const char *in) {
     size_t pos = 0;
@@ -207,6 +322,19 @@ static int handle_http_request(int client_fd, const char *database_path, int por
         }
         send_http_response(client_fd, response, strlen(response), 200,
                            "application/json");
+    } else if(strncmp(request, "GET /api/info", 13) == 0) {
+        char ip[64];
+        char firmware_label[16];
+
+        get_active_local_ip(ip, sizeof(ip));
+        format_firmware_version_string(firmware_label, sizeof(firmware_label),
+                                       firmware_version);
+        snprintf(response, sizeof(response),
+                 "{\"ip\":\"%s\",\"port\":%d,\"firmware\":\"%s\","
+                 "\"version\":\"%s\"}", ip, port, firmware_label,
+                 WELCOMEHUB_PAYLOAD_VERSION);
+        send_http_response(client_fd, response, strlen(response), 200,
+                           "application/json");
     } else if(strncmp(request, "POST /api/toggle", 16) == 0) {
         int next_visible = 0;
         int after = 0;
@@ -234,9 +362,8 @@ static int handle_http_request(int client_fd, const char *database_path, int por
                                "application/json");
         }
     } else if(strncmp(request, "GET /", 5) == 0) {
-        static char page[32768];
-        ui_build_page(page, sizeof(page), port, firmware_version);
-        send_http_response(client_fd, page, strlen(page), 200, "text/html");
+        send_http_response(client_fd, (const char *)web_index_html,
+                           web_index_html_size, 200, "text/html");
     } else {
         const char *not_found = "{\"ok\":false}";
         send_http_response(client_fd, not_found, strlen(not_found), 404,
