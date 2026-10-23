@@ -2,6 +2,8 @@
 
 A PS5 ELF payload that enables the Welcome Hub.
 
+![WelcomeHubActivator](https://raw.githubusercontent.com/ghost1372/App-Resources/refs/heads/main/PS5-Payloads/WelcomeHubActivator/1.png)
+
 ## Requirements
 
 - A PS5 payload loader capable of running this ELF and a console running supported firmware `10.00`–`13.60`.
