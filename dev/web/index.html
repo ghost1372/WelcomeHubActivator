@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b12">
   <link rel="icon" href="data:,">
-  <title>
-WelcomeHubActivator
-</title>
+  <title>Payload</title>
   <style>
     :root {
       color-scheme: dark;
@@ -205,16 +203,12 @@ WelcomeHubActivator
         <span class="fw-chip-value" id="fwValue">-</span>
       </span>
     </div>
-    <section class="card" id="panel" aria-label="
-WelcomeHubActivator
- dashboard">
+    <section class="card" id="panel" aria-label="Dashboard">
       <header class="brand-row">
         <div class="brand-mark" aria-hidden="true">W</div>
         <div>
-          <p class="eyebrow--compact">
-Welcome Hub
-</p>
-          <h1>Activator <span class="version" id="verValue"></span></h1>
+          <p class="eyebrow--compact" id="eyebrow"></p>
+          <h1><span id="uiTitle"></span> <span class="version" id="verValue"></span></h1>
         </div>
       </header>
       <div class="divider"></div>
@@ -246,14 +240,8 @@ Welcome Hub
       </aside>
     </section>
     <footer>
-      <span>Developed by <strong>
-Mahdi Hosseini
-</strong></span>
-      <a href="
-https://github.com/ghost1372/WelcomeHubActivator
-">
-github.com/ghost1372/WelcomeHubActivator
-</a>
+      <span>Developed by <strong id="author"></strong></span>
+      <a id="repoLink" href="#" target="_blank" rel="noopener"></a>
     </footer>
   </main>
   <script>
@@ -280,6 +268,14 @@ github.com/ghost1372/WelcomeHubActivator
     fetch('/api/info').then(r => r.json()).then(d => {
       document.getElementById('fwValue').textContent = d.firmware;
       document.getElementById('verValue').textContent = d.version;
+      document.getElementById('uiTitle').textContent = d.title;
+      document.getElementById('eyebrow').textContent = d.eyebrow;
+      document.getElementById('author').textContent = d.author;
+      var repo = document.getElementById('repoLink');
+      repo.href = d.repoUrl;
+      repo.textContent = d.repoPath;
+      panel.setAttribute('aria-label', d.name + ' dashboard');
+      document.title = d.name;
       document.getElementById('accessValue').textContent = d.ip + ':' + d.port;
     }).catch(() => {});
     let confirmed = false, seq = 0;

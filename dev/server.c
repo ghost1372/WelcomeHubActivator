@@ -325,15 +325,21 @@ static int handle_http_request(int client_fd, const char *database_path, int por
     } else if(strncmp(request, "GET /api/info", 13) == 0) {
         char ip[64];
         char firmware_label[16];
+        char info[768];
 
+        /* Branding strings come from config.h; avoid " and \ in them. */
         get_active_local_ip(ip, sizeof(ip));
         format_firmware_version_string(firmware_label, sizeof(firmware_label),
                                        firmware_version);
-        snprintf(response, sizeof(response),
+        snprintf(info, sizeof(info),
                  "{\"ip\":\"%s\",\"port\":%d,\"firmware\":\"%s\","
-                 "\"version\":\"%s\"}", ip, port, firmware_label,
-                 WELCOMEHUB_PAYLOAD_VERSION);
-        send_http_response(client_fd, response, strlen(response), 200,
+                 "\"version\":\"%s\",\"name\":\"%s\",\"title\":\"%s\","
+                 "\"eyebrow\":\"%s\",\"author\":\"%s\",\"repoPath\":\"%s\","
+                 "\"repoUrl\":\"%s\"}",
+                 ip, port, firmware_label, WELCOMEHUB_PAYLOAD_VERSION,
+                 WELCOMEHUB_APP_NAME, WELCOMEHUB_UI_TITLE, WELCOMEHUB_UI_EYEBROW,
+                 WELCOMEHUB_AUTHOR, WELCOMEHUB_REPO_PATH, WELCOMEHUB_REPO_URL);
+        send_http_response(client_fd, info, strlen(info), 200,
                            "application/json");
     } else if(strncmp(request, "POST /api/toggle", 16) == 0) {
         int next_visible = 0;
