@@ -37,7 +37,8 @@ body:
     attributes:
       label: Payload version
       options:
-        - "WelcomeHubActivator 1.0.0"
+        - "v1.2.0"
+        - "v1.0.0"
   - type: dropdown
     validations:
       required: true
