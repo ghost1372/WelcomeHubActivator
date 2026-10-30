@@ -19,6 +19,19 @@ on:
 permissions:
   contents: write
 
+env:
+  PAYLOAD_NAME: WelcomeHubActivator
+  ARTIFACT_EXT: elf
+  SOURCE_DIR: dev
+  MAKE_VERSION_VAR: PAYLOAD_VERSION
+  MAKE_EXTRA_ARGS: ''
+  SDK_SOURCE_DIR: sdk
+  SDK_INSTALL_DIR_NAME: ps5-payload-sdk
+  APT_PACKAGES: clang lld make wget
+  VERSION_REGEX: '^v[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$'
+  DIST_DIR: dist
+  CHECKSUM_FILE: SHA256SUMS.txt
+
 jobs:
   release:
     runs-on: ubuntu-24.04
@@ -28,43 +41,46 @@ jobs:
           INPUT_TAG: ${{ inputs.tag }}
         run: |
           VERSION="${INPUT_TAG:-$GITHUB_REF_NAME}"
-          if [[ ! "$VERSION" =~ ^v[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$ ]]; then
+          if [[ ! "$VERSION" =~ $VERSION_REGEX ]]; then
             echo "Invalid version: $VERSION" >&2
             exit 1
           fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          {
+            echo "VERSION=$VERSION"
+            echo "ARTIFACT_FILE=${PAYLOAD_NAME}-${VERSION}.${ARTIFACT_EXT}"
+          } >> "$GITHUB_ENV"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Install toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang lld make wget
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES
 
       - name: Build PS5 Payload SDK
         run: |
-          SDK_DIR="$HOME/ps5-payload-sdk"
-          make -C sdk DESTDIR="$SDK_DIR" install
+          SDK_DIR="$HOME/$SDK_INSTALL_DIR_NAME"
+          make -C "$SDK_SOURCE_DIR" DESTDIR="$SDK_DIR" install
           echo "PS5_PAYLOAD_SDK=$SDK_DIR" >> "$GITHUB_ENV"
 
       - name: Build
-        run: make -C dev PAYLOAD_VERSION="$VERSION"
+        run: make -C "$SOURCE_DIR" "$MAKE_VERSION_VAR=$VERSION" $MAKE_EXTRA_ARGS
 
       - name: Package
         run: |
-          mkdir -p dist
-          cp "dev/WelcomeHubActivator-${VERSION}.elf" dist/
-          cd dist
-          sha256sum "WelcomeHubActivator-${VERSION}.elf" > SHA256SUMS.txt
+          mkdir -p "$DIST_DIR"
+          cp "$SOURCE_DIR/$ARTIFACT_FILE" "$DIST_DIR/"
+          cd "$DIST_DIR"
+          sha256sum "$ARTIFACT_FILE" > "$CHECKSUM_FILE"
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: WelcomeHubActivator-${{ env.VERSION }}
-          path: dist/*
+          name: ${{ env.PAYLOAD_NAME }}-${{ env.VERSION }}
+          path: ${{ env.DIST_DIR }}/*
 
       - name: Publish release
         if: ${{ !inputs.dry_run }}
@@ -76,10 +92,10 @@ jobs:
             FLAGS+=(--prerelease)
           fi
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            gh release upload "$VERSION" dist/* --clobber
+            gh release upload "$VERSION" "$DIST_DIR"/* --clobber
           else
-            gh release create "$VERSION" dist/* \
-              --title "WelcomeHubActivator $VERSION" \
+            gh release create "$VERSION" "$DIST_DIR"/* \
+              --title "$PAYLOAD_NAME $VERSION" \
               --generate-notes \
               --target "$GITHUB_SHA" \
               "${FLAGS[@]}"
