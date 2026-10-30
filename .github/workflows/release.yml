@@ -1,0 +1,86 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.2.1)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Build only, do not publish a release'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve version
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "Invalid version: $VERSION" >&2
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang lld make wget
+
+      - name: Build PS5 Payload SDK
+        run: |
+          SDK_DIR="$HOME/ps5-payload-sdk"
+          make -C sdk DESTDIR="$SDK_DIR" install
+          echo "PS5_PAYLOAD_SDK=$SDK_DIR" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: make -C dev PAYLOAD_VERSION="$VERSION"
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp "dev/WelcomeHubActivator-${VERSION}.elf" dist/
+          cd dist
+          sha256sum "WelcomeHubActivator-${VERSION}.elf" > SHA256SUMS.txt
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WelcomeHubActivator-${{ env.VERSION }}
+          path: dist/*
+
+      - name: Publish release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FLAGS=()
+          if [[ "$VERSION" == *-* ]]; then
+            FLAGS+=(--prerelease)
+          fi
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release upload "$VERSION" dist/* --clobber
+          else
+            gh release create "$VERSION" dist/* \
+              --title "WelcomeHubActivator $VERSION" \
+              --generate-notes \
+              --target "$GITHUB_SHA" \
+              "${FLAGS[@]}"
+          fi
